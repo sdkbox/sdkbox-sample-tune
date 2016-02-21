@@ -18,25 +18,31 @@ function MainScene:onCreate()
 end
 
 function MainScene:setupTestMenu()
-    local label1 = cc.Label:createWithSystemFont("Test Item 1", "sans", 28)
+    sdkbox.PluginTune:setDebugMode(true)
+    sdkbox.PluginTune:measureSession()
+    sdkbox.PluginTune:setListener(function (args)
+        dump(args)
+    end)
+
+    sdkbox.PluginTune:checkForDeferredDeepLink()
+
+    local label1 = cc.Label:createWithSystemFont("purchase event", "sans", 28)
     local item1 = cc.MenuItemLabel:create(label1)
     item1:onClicked(function()
-        print("Test Item 1")
+        print("purchase event")
+        sdkbox.PluginTune:measureEventName("purchase")
+        sdkbox.PluginTune:measureEventId(1122334455)
+        local event = {}
+        event.eventName = "purchase2"
+        event.refId     = "RJ1357"
+        event.searchString = "sweet crisp red apples"
+        event.attribute1 = "crisp"
+        event.attribute2 = "red"
+        event.quantity = 3
+        sdkbox.PluginTune:measureEvent(json.encode(event))
     end)
 
-    local label2 = cc.Label:createWithSystemFont("Test Item 2", "sans", 28)
-    local item2 = cc.MenuItemLabel:create(label2)
-    item2:onClicked(function()
-        print("Test Item 2")
-    end)
-
-    local label3 = cc.Label:createWithSystemFont("Test Item 3", "sans", 28)
-    local item3 = cc.MenuItemLabel:create(label3)
-    item3:onClicked(function()
-        print("Test Item 3")
-    end)
-
-    local menu = cc.Menu:create(item1, item2, item3)
+    local menu = cc.Menu:create(item1)
     menu:alignItemsVerticallyWithPadding(24)
     self:addChild(menu)
 end

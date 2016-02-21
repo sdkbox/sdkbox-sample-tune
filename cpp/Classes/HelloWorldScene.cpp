@@ -1,5 +1,6 @@
 
 #include "HelloWorldScene.h"
+#include "PluginTune/PluginTune.h"
 
 USING_NS_CC;
 
@@ -56,21 +57,54 @@ bool HelloWorld::init()
 
 void HelloWorld::createTestMenu()
 {
+    sdkbox::PluginTune::setDebugMode(true);
+    sdkbox::PluginTune::measureSession();
+    sdkbox::PluginTune::setListener(this);
+    
+    sdkbox::PluginTune::checkForDeferredDeepLink();
+    
+
     auto menu = Menu::create();
 
-    menu->addChild(MenuItemLabel::create(Label::createWithSystemFont("Test Item 1", "sans", 24), [](Ref*){
-        CCLOG("Test Item 1");
-    }));
-
-    menu->addChild(MenuItemLabel::create(Label::createWithSystemFont("Test Item 2", "sans", 24), [](Ref*){
-        CCLOG("Test Item 2");
-    }));
-
-    menu->addChild(MenuItemLabel::create(Label::createWithSystemFont("Test Item 3", "sans", 24), [](Ref*){
-        CCLOG("Test Item 3");
+    menu->addChild(MenuItemLabel::create(Label::createWithSystemFont("purchase event", "sans", 24), [](Ref*){
+        CCLOG("purchase event");
+        sdkbox::PluginTune::measureEventName("purchase");
+        sdkbox::PluginTune::measureEventId(1122334455);
+        sdkbox::TuneEvent event;
+        event.eventName = "purchase2";
+        event.refId     = "RJ1357";
+        event.searchString = "sweet crisp red apples";
+        event.attribute1 = "crisp";
+        event.attribute2 = "red";
+        event.quantity = 3;
+        sdkbox::PluginTune::measureEvent(event);
     }));
 
     menu->alignItemsVerticallyWithPadding(10);
     addChild(menu);
 }
 
+void HelloWorld::onMobileAppTrackerEnqueuedActionWithReferenceId(const std::string &referenceId)
+{
+    CCLOG("onMobileAppTrackerEnqueuedActionWithReferenceId, referenceId = %s", referenceId.c_str());
+}
+
+void HelloWorld::onMobileAppTrackerDidSucceedWithData(const std::string &data)
+{
+    CCLOG("onMobileAppTrackerDidSucceedWithData, data = %s", data.c_str());
+}
+
+void HelloWorld::onMobileAppTrackerDidFailWithError(const std::string &errorString)
+{
+    CCLOG("onMobileAppTrackerDidFailWithError, error = %s", errorString.c_str());
+}
+
+void HelloWorld::onMobileAppTrackerDidReceiveDeeplink(const std::string &deeplink, bool timeout)
+{
+    CCLOG("onMobileAppTrackerDidReceiveDeeplink, deepLink = %s, timeout = %s", deeplink.c_str(), timeout ? "yes" : "no");
+}
+
+void HelloWorld::onMobileAppTrackerDidFailDeeplinkWithError(const std::string &errorString)
+{
+    CCLOG("onMobileAppTrackerDidFailDeeplinkWithError, error = %s", errorString.c_str());
+}

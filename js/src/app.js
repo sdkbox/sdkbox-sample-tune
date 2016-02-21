@@ -31,20 +31,47 @@ var HelloWorldLayer = cc.Layer.extend({
     },
 
     createTestMenu:function() {
-        var item1 = new cc.MenuItemLabel(new cc.LabelTTF("Test Item 1", "sans", 28), function() {
-            cc.log("Test Item 1");
+        sdkbox.PluginTune.setDebugMode(true);
+        sdkbox.PluginTune.measureSession();
+        sdkbox.PluginTune.setListener({
+            onEnqueuedAction: function(data) {
+                cc.log("onEnqueuedAction");
+            },
+            onSucceed: function(data) {
+                cc.log("onSucceed");
+            },
+            onFailed: function(data) {
+                cc.log("onFailed");
+            },
+            onReceiveDeeplink: function(data, timeout) {
+                cc.log("onReceiveDeeplink");
+            },
+            onFailDeeplink: function(errorString) {
+                cc.log("onFailDeeplink");
+            }
         });
 
-        var item2 = new cc.MenuItemLabel(new cc.LabelTTF("Test Item 2", "sans", 28), function() {
-            cc.log("Test Item 2");
-        });
+        sdkbox.PluginTune.checkForDeferredDeepLink();
 
-        var item3 = new cc.MenuItemLabel(new cc.LabelTTF("Test Item 3", "sans", 28), function() {
-            cc.log("Test Item 3");
+
+        var item1 = new cc.MenuItemLabel(new cc.LabelTTF("purchase event", "sans", 28), function() {
+            cc.log("purchase event");
+
+            sdkbox.PluginTune.measureEventName("login");
+            sdkbox.PluginTune.measureEventId(0123456789);
+
+            var event = {};
+            event.eventName = "purchase";
+            event.refId = "RJ1357";
+            event.searchString = "sweet srisp red apples";
+            event.attribute1 = "srisp";
+            event.attribute2 = "red";
+            event.quantity = 3;
+            sdkbox.PluginTune.measureEvent(JSON.stringify(event));
         });
 
         var winsize = cc.winSize;
-        var menu = new cc.Menu(item1, item2, item3);
+        var menu = new cc.Menu(item1);
         menu.x = winsize.width / 2;
         menu.y = winsize.height / 2;
         menu.alignItemsVerticallyWithPadding(20);
