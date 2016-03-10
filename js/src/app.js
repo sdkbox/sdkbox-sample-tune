@@ -31,6 +31,7 @@ var HelloWorldLayer = cc.Layer.extend({
     },
 
     createTestMenu:function() {
+        sdkbox.PluginTune.init();
         sdkbox.PluginTune.setDebugMode(true);
         sdkbox.PluginTune.measureSession();
         sdkbox.PluginTune.setListener({

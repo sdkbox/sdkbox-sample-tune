@@ -18,6 +18,7 @@ function MainScene:onCreate()
 end
 
 function MainScene:setupTestMenu()
+    sdkbox.PluginTune:init()
     sdkbox.PluginTune:setDebugMode(true)
     sdkbox.PluginTune:measureSession()
     sdkbox.PluginTune:setListener(function (args)
