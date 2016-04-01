@@ -58,7 +58,7 @@ var HelloWorldLayer = cc.Layer.extend({
         var item1 = new cc.MenuItemLabel(new cc.LabelTTF("purchase event", "sans", 28), function() {
             cc.log("purchase event");
 
-            sdkbox.PluginTune.measureEventName("login");
+            sdkbox.PluginTune.measureEventName("login-2016-04-01");
             sdkbox.PluginTune.measureEventId(0123456789);
 
             var event = {};

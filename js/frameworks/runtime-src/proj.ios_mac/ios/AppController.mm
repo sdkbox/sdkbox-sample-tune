@@ -31,6 +31,8 @@
 #import "RootViewController.h"
 #import "platform/ios/CCEAGLView-ios.h"
 
+#import <MobileAppTracker/MobileAppTracker.h>
+
 @implementation AppController
 
 #pragma mark -
@@ -103,6 +105,14 @@ static AppDelegate s_sharedApplication;
      Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
      */
     cocos2d::Director::getInstance()->resume();
+
+    [Tune measureSession];
+}
+
+- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
+{
+    [Tune applicationDidOpenURL:[url absoluteString] sourceApplication:sourceApplication];
+    return YES;
 }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application {

@@ -31,7 +31,7 @@ function MainScene:setupTestMenu()
     local item1 = cc.MenuItemLabel:create(label1)
     item1:onClicked(function()
         print("purchase event")
-        sdkbox.PluginTune:measureEventName("purchase")
+        sdkbox.PluginTune:measureEventName("purchase2016-04-01")
         sdkbox.PluginTune:measureEventId(1122334455)
         local event = {}
         event.eventName = "purchase2"

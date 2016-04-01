@@ -71,7 +71,7 @@ void HelloWorld::createTestMenu()
         sdkbox::PluginTune::measureEventName("purchase");
         sdkbox::PluginTune::measureEventId(1122334455);
         sdkbox::TuneEvent event;
-        event.eventName = "purchase2";
+        event.eventName = "purchase2016-04-01";
         event.refId     = "RJ1357";
         event.searchString = "sweet crisp red apples";
         event.attribute1 = "crisp";
