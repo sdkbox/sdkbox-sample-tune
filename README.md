@@ -35,3 +35,7 @@ Memo:
 | +-- lua
 | \-- js
 ~~~
+
+For chinese user:
+
+plse test with proxy.
