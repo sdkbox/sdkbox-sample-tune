@@ -1,8 +1,6 @@
 
 #include "PluginTuneLuaHelper.h"
 #include "PluginTune/PluginTune.h"
-#include "CCLuaEngine.h"
-#include "tolua_fix.h"
 #include "SDKBoxLuaHelper.h"
 #include <sstream>
 
