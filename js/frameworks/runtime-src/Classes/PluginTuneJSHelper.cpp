@@ -3,8 +3,6 @@
 #include "PluginTuneJS.hpp"
 #include "PluginTune/PluginTune.h"
 #include <sstream>
-#include "js_manual_conversions.h"
-#include "cocos2d_specifics.hpp"
 #include "SDKBoxJSHelper.h"
 
 extern JSObject* jsb_sdkbox_PluginTune_prototype;
@@ -12,14 +10,15 @@ extern JSObject* jsb_sdkbox_PluginTune_prototype;
 static JSContext* s_cx = nullptr;
 
 USING_NS_CC;
-#if COCOS2D_VERSION < 0x00030000
-#else
-#define CCObject Ref
-#define CCDirector Director
-#define sharedDirector getInstance
+
+#if (COCOS2D_VERSION < 0x00030000)
+#define Ref CCObject
+#define Director CCDirector
+#define getInstance sharedDirector
+#define schedule scheduleSelector
 #endif
 
-class JsCallbackObj : public CCObject
+class JsCallbackObj : public Ref
 {
 public:
     static JsCallbackObj *create(const std::string &eventName, const std::string &eventData, bool timeout, JSObject *handler)
@@ -31,7 +30,7 @@ public:
 
     void start()
     {
-        CCDirector::sharedDirector()->getScheduler()->scheduleSelector(schedule_selector(JsCallbackObj::callback), this, 0.1, false);
+        Director::getInstance()->getScheduler()->schedule(schedule_selector(JsCallbackObj::callback), this, 0.1, 0, 0.0f, false);
     }
 
     void callback(float dt)
@@ -43,7 +42,7 @@ public:
         JSContext* cx = s_cx;
         const char* func_name = _eventName.data();
 
-        JS::RootedObject obj(cx, m_jsHandler);
+        JS::RootedObject obj(cx, _jsHandler);
         JSAutoCompartment ac(cx, obj);
 
 #if defined(MOZJS_MAJOR_VERSION)
@@ -84,8 +83,6 @@ public:
             JS_CallFunctionName(cx, obj, func_name, paramsCount, dataVal, &retval);
 #endif
         }
-
-        CCDirector::sharedDirector()->getScheduler()->unscheduleAllForTarget(this);
         release();
     }
 
@@ -94,55 +91,45 @@ private:
     : _eventName(eventName)
     , _eventData(eventData)
     , _timeout(timeout)
-    , m_jsHandler(handler)
+    , _jsHandler(handler)
     {
         retain();
     }
 
-    JSObject* m_jsHandler;
+    JSObject* _jsHandler;
     std::string _eventName;
     std::string _eventData;
     bool _timeout;
 }; // JsCallbackObj
 
 
-class TuneListenerJs : public sdkbox::TuneListener {
+class TuneListenerJs : public sdkbox::TuneListener, public sdkbox::JSListenerBase
+{
 public:
-    TuneListenerJs(): m_jsHandler(nullptr) {
-    }
-    ~TuneListenerJs() {
-    }
-
-    void setHandler(JSObject* jsHandler) {
-        if (m_jsHandler == jsHandler) {
-            return;
-        }
-        m_jsHandler = jsHandler;
+    TuneListenerJs():sdkbox::JSListenerBase() {
     }
 
     virtual void onMobileAppTrackerEnqueuedActionWithReferenceId(const std::string &referenceId)
     {
-        JsCallbackObj::create("onEnqueuedAction", referenceId, false, m_jsHandler)->start();
+        JsCallbackObj::create("onEnqueuedAction", referenceId, false, getJSDelegate())->start();
     }
     virtual void onMobileAppTrackerDidSucceedWithData(const std::string &data)
     {
-        JsCallbackObj::create("onSucceed", data, false, m_jsHandler)->start();
+        JsCallbackObj::create("onSucceed", data, false, getJSDelegate())->start();
     }
     virtual void onMobileAppTrackerDidFailWithError(const std::string &errorString)
     {
-        JsCallbackObj::create("onFailed", errorString, false, m_jsHandler)->start();
+        JsCallbackObj::create("onFailed", errorString, false, getJSDelegate())->start();
     }
     virtual void onMobileAppTrackerDidReceiveDeeplink(const std::string &deeplink, bool timeout)
     {
-        JsCallbackObj::create("onReceiveDeeplink", deeplink, timeout, m_jsHandler)->start();
+        JsCallbackObj::create("onReceiveDeeplink", deeplink, timeout, getJSDelegate())->start();
     }
     virtual void onMobileAppTrackerDidFailDeeplinkWithError(const std::string &errorString)
     {
-        JsCallbackObj::create("onFailDeeplink", errorString, false, m_jsHandler)->start();
+        JsCallbackObj::create("onFailDeeplink", errorString, false, getJSDelegate())->start();
     }
 
-private:
-    JSObject* m_jsHandler;
 }; // TuneListenerJs
 
 #if defined(MOZJS_MAJOR_VERSION)
@@ -161,11 +148,10 @@ JSBool js_PluginTuneJS_PluginTune_setListener(JSContext *cx, unsigned argc, JS::
         {
             ok = false;
         }
-        JSObject *tmpObj = args.get(0).toObjectOrNull();
 
         JSB_PRECONDITION2(ok, cx, false, "js_PluginTuneJS_PluginTune_setListener : Error processing arguments");
         TuneListenerJs *lis = new TuneListenerJs();
-        lis->setHandler(tmpObj);
+        lis->setJSDelegate(args.get(0));
         sdkbox::PluginTune::setListener(lis);
 
         args.rval().setUndefined();
