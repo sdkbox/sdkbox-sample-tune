@@ -31,7 +31,7 @@
 #import "RootViewController.h"
 #import "platform/ios/CCEAGLView-ios.h"
 
-#import <MobileAppTracker/MobileAppTracker.h>
+#import <Tune/Tune.h>
 
 @implementation AppController
 

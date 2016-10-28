@@ -28,7 +28,7 @@
 #import "AppDelegate.h"
 #import "RootViewController.h"
 
-#import <MobileAppTracker/MobileAppTracker.h>
+#import <Tune/Tune.h>
 
 @implementation AppController
 
