@@ -5,6 +5,8 @@ xcuserdata/
 cpp/bin/
 cpp/proj.ios_mac/build/
 
+*.zip
+
 cpp/proj.android/local.properties
 cpp/proj.android/assets/
 cpp/proj.android/obj/

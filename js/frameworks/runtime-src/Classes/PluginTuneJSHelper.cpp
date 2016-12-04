@@ -18,31 +18,74 @@ USING_NS_CC;
 #define schedule scheduleSelector
 #endif
 
-class JsCallbackObj : public Ref
+class TuneCallbackJS: public cocos2d::Ref {
+public:
+    TuneCallbackJS();
+    void schedule();
+    void notityJs(float dt);
+
+    std::string _name;
+
+    jsval _paramVal[2];
+    int _paramLen;
+};
+
+class TuneListenerJS : public sdkbox::TuneListener, public sdkbox::JSListenerBase
 {
 public:
-    static JsCallbackObj *create(const std::string &eventName, const std::string &eventData, bool timeout, JSObject *handler)
-    {
-        JsCallbackObj *obj = new JsCallbackObj(eventName, eventData, timeout, handler);
-        obj->autorelease();
-        return obj;
+    TuneListenerJS():sdkbox::JSListenerBase() {
     }
 
-    void start()
+    void onMobileAppTrackerEnqueuedActionWithReferenceId(const std::string &referenceId)
     {
-        Director::getInstance()->getScheduler()->schedule(schedule_selector(JsCallbackObj::callback), this, 0.1, 0, 0.0f, false);
+        TuneCallbackJS* cb = new TuneCallbackJS();
+        cb->_name = "onEnqueuedAction";
+        cb->_paramVal[0] = std_string_to_jsval(s_cx, referenceId);
+        cb->_paramLen = 1;
+        cb->schedule();
+    }
+    void onMobileAppTrackerDidSucceedWithData(const std::string &data)
+    {
+        TuneCallbackJS* cb = new TuneCallbackJS();
+        cb->_name = "onSucceed";
+        cb->_paramVal[0] = std_string_to_jsval(s_cx, data);
+        cb->_paramLen = 1;
+        cb->schedule();
+    }
+    void onMobileAppTrackerDidFailWithError(const std::string &errorString)
+    {
+        TuneCallbackJS* cb = new TuneCallbackJS();
+        cb->_name = "onFailed";
+        cb->_paramVal[0] = std_string_to_jsval(s_cx, errorString);
+        cb->_paramLen = 1;
+        cb->schedule();
+    }
+    void onMobileAppTrackerDidReceiveDeeplink(const std::string &deeplink, bool timeout)
+    {
+        TuneCallbackJS* cb = new TuneCallbackJS();
+        cb->_name = "onFailed";
+        cb->_paramVal[0] = std_string_to_jsval(s_cx, deeplink);
+        cb->_paramVal[1] = BOOLEAN_TO_JSVAL(timeout);
+        cb->_paramLen = 2;
+        cb->schedule();
+    }
+    void onMobileAppTrackerDidFailDeeplinkWithError(const std::string &errorString)
+    {
+        TuneCallbackJS* cb = new TuneCallbackJS();
+        cb->_name = "onFailDeeplink";
+        cb->_paramVal[0] = std_string_to_jsval(s_cx, errorString);
+        cb->_paramLen = 1;
+        cb->schedule();
     }
 
-    void callback(float dt)
+    void invokeJS(const char* func, jsval* pVals, int valueSize)
     {
-        if (!s_cx)
-        {
+        if (!s_cx) {
             return;
         }
         JSContext* cx = s_cx;
-        const char* func_name = _eventName.data();
-
-        JS::RootedObject obj(cx, _jsHandler);
+        const char* func_name = func;
+        JS::RootedObject obj(cx, getJSDelegate());
         JSAutoCompartment ac(cx, obj);
 
 #if defined(MOZJS_MAJOR_VERSION)
@@ -61,14 +104,6 @@ public:
         jsval func_handle;
 #endif
 
-        jsval dataVal[2];
-        dataVal[0] = c_string_to_jsval(cx, _eventData.c_str());
-        dataVal[1] = BOOLEAN_TO_JSVAL(_timeout);
-        int paramsCount = 1;
-        if ("onReceiveDeeplink" == _eventName) {
-            paramsCount = 2;
-        }
-
         if (JS_HasProperty(cx, obj, func_name, &hasAction) && hasAction) {
             if(!JS_GetProperty(cx, obj, func_name, &func_handle)) {
                 return;
@@ -78,59 +113,42 @@ public:
             }
 
 #if MOZJS_MAJOR_VERSION >= 31
-            JS_CallFunctionName(cx, obj, func_name, JS::HandleValueArray::fromMarkedLocation(paramsCount, dataVal), &retval);
+            if (0 == valueSize) {
+                JS_CallFunctionName(cx, obj, func_name, JS::HandleValueArray::empty(), &retval);
+            } else {
+                JS_CallFunctionName(cx, obj, func_name, JS::HandleValueArray::fromMarkedLocation(valueSize, pVals), &retval);
+            }
 #else
-            JS_CallFunctionName(cx, obj, func_name, paramsCount, dataVal, &retval);
+            if (0 == valueSize) {
+                JS_CallFunctionName(cx, obj, func_name, 0, nullptr, &retval);
+            } else {
+                JS_CallFunctionName(cx, obj, func_name, valueSize, pVals, &retval);
+            }
 #endif
         }
-        release();
     }
 
-private:
-    JsCallbackObj(const std::string &eventName, const std::string &eventData, bool timeout, JSObject *handler)
-    : _eventName(eventName)
-    , _eventData(eventData)
-    , _timeout(timeout)
-    , _jsHandler(handler)
-    {
-        retain();
-    }
-
-    JSObject* _jsHandler;
-    std::string _eventName;
-    std::string _eventData;
-    bool _timeout;
-}; // JsCallbackObj
+};
 
 
-class TuneListenerJs : public sdkbox::TuneListener, public sdkbox::JSListenerBase
-{
-public:
-    TuneListenerJs():sdkbox::JSListenerBase() {
-    }
+TuneCallbackJS::TuneCallbackJS():
+_paramLen(0) {
+}
 
-    virtual void onMobileAppTrackerEnqueuedActionWithReferenceId(const std::string &referenceId)
-    {
-        JsCallbackObj::create("onEnqueuedAction", referenceId, false, getJSDelegate())->start();
-    }
-    virtual void onMobileAppTrackerDidSucceedWithData(const std::string &data)
-    {
-        JsCallbackObj::create("onSucceed", data, false, getJSDelegate())->start();
-    }
-    virtual void onMobileAppTrackerDidFailWithError(const std::string &errorString)
-    {
-        JsCallbackObj::create("onFailed", errorString, false, getJSDelegate())->start();
-    }
-    virtual void onMobileAppTrackerDidReceiveDeeplink(const std::string &deeplink, bool timeout)
-    {
-        JsCallbackObj::create("onReceiveDeeplink", deeplink, timeout, getJSDelegate())->start();
-    }
-    virtual void onMobileAppTrackerDidFailDeeplinkWithError(const std::string &errorString)
-    {
-        JsCallbackObj::create("onFailDeeplink", errorString, false, getJSDelegate())->start();
-    }
+void TuneCallbackJS::schedule() {
+    retain();
+    cocos2d::Director::getInstance()->getScheduler()->schedule(schedule_selector(TuneCallbackJS::notityJs), this, 0, 0, 0.0f, false);
+    autorelease();
+}
 
-}; // TuneListenerJs
+void TuneCallbackJS::notityJs(float dt) {
+    sdkbox::TuneListener* lis = sdkbox::PluginTune::getListener();
+    TuneListenerJS* l = dynamic_cast<TuneListenerJS*>(lis);
+    if (l) {
+        l->invokeJS(_name.c_str(), _paramVal, _paramLen);
+    }
+    release();
+}
 
 #if defined(MOZJS_MAJOR_VERSION)
 bool js_PluginTuneJS_PluginTune_setListener(JSContext *cx, uint32_t argc, jsval *vp)
@@ -150,7 +168,7 @@ JSBool js_PluginTuneJS_PluginTune_setListener(JSContext *cx, unsigned argc, JS::
         }
 
         JSB_PRECONDITION2(ok, cx, false, "js_PluginTuneJS_PluginTune_setListener : Error processing arguments");
-        TuneListenerJs *lis = new TuneListenerJs();
+        TuneListenerJS *lis = new TuneListenerJS();
         lis->setJSDelegate(args.get(0));
         sdkbox::PluginTune::setListener(lis);
 
