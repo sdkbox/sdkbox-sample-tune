@@ -26,7 +26,7 @@ public:
 
     std::string _name;
 
-    jsval _paramVal[2];
+    JS::Value _paramVal[2];
     int _paramLen;
 };
 
@@ -39,46 +39,61 @@ public:
     void onMobileAppTrackerEnqueuedActionWithReferenceId(const std::string &referenceId)
     {
         TuneCallbackJS* cb = new TuneCallbackJS();
+#if MOZJS_MAJOR_VERSION < 52
+        JSB_AUTOCOMPARTMENT_WITH_GLOBAL_OBJCET
+#endif
         cb->_name = "onEnqueuedAction";
-        cb->_paramVal[0] = std_string_to_jsval(s_cx, referenceId);
+        cb->_paramVal[0] = SB_STR_TO_JSVAL(s_cx, referenceId);
         cb->_paramLen = 1;
         cb->schedule();
     }
     void onMobileAppTrackerDidSucceedWithData(const std::string &data)
     {
         TuneCallbackJS* cb = new TuneCallbackJS();
+#if MOZJS_MAJOR_VERSION < 52
+        JSB_AUTOCOMPARTMENT_WITH_GLOBAL_OBJCET
+#endif
         cb->_name = "onSucceed";
-        cb->_paramVal[0] = std_string_to_jsval(s_cx, data);
+        cb->_paramVal[0] = SB_STR_TO_JSVAL(s_cx, data);
         cb->_paramLen = 1;
         cb->schedule();
     }
     void onMobileAppTrackerDidFailWithError(const std::string &errorString)
     {
         TuneCallbackJS* cb = new TuneCallbackJS();
+#if MOZJS_MAJOR_VERSION < 52
+        JSB_AUTOCOMPARTMENT_WITH_GLOBAL_OBJCET
+#endif
         cb->_name = "onFailed";
-        cb->_paramVal[0] = std_string_to_jsval(s_cx, errorString);
+        cb->_paramVal[0] = SB_STR_TO_JSVAL(s_cx, errorString);
         cb->_paramLen = 1;
         cb->schedule();
     }
     void onMobileAppTrackerDidReceiveDeeplink(const std::string &deeplink, bool timeout)
     {
         TuneCallbackJS* cb = new TuneCallbackJS();
+#if MOZJS_MAJOR_VERSION < 52
+        JSB_AUTOCOMPARTMENT_WITH_GLOBAL_OBJCET
+#endif
         cb->_name = "onFailed";
-        cb->_paramVal[0] = std_string_to_jsval(s_cx, deeplink);
-        cb->_paramVal[1] = BOOLEAN_TO_JSVAL(timeout);
+        cb->_paramVal[0] = SB_STR_TO_JSVAL(s_cx, deeplink);
+        cb->_paramVal[1] = JS::BooleanValue(timeout);
         cb->_paramLen = 2;
         cb->schedule();
     }
     void onMobileAppTrackerDidFailDeeplinkWithError(const std::string &errorString)
     {
         TuneCallbackJS* cb = new TuneCallbackJS();
+#if MOZJS_MAJOR_VERSION < 52
+        JSB_AUTOCOMPARTMENT_WITH_GLOBAL_OBJCET
+#endif
         cb->_name = "onFailDeeplink";
-        cb->_paramVal[0] = std_string_to_jsval(s_cx, errorString);
+        cb->_paramVal[0] = SB_STR_TO_JSVAL(s_cx, errorString);
         cb->_paramLen = 1;
         cb->schedule();
     }
 
-    void invokeJS(const char* func, jsval* pVals, int valueSize)
+    void invokeJS(const char* func, JS::Value *pVals, int valueSize)
     {
         if (!s_cx) {
             return;
@@ -108,7 +123,7 @@ public:
             if(!JS_GetProperty(cx, obj, func_name, &func_handle)) {
                 return;
             }
-            if(func_handle == JSVAL_VOID) {
+            if(func_handle == JS::NullValue()) {
                 return;
             }
 
@@ -151,7 +166,7 @@ void TuneCallbackJS::notityJs(float dt) {
 }
 
 #if defined(MOZJS_MAJOR_VERSION)
-bool js_PluginTuneJS_PluginTune_setListener(JSContext *cx, uint32_t argc, jsval *vp)
+bool js_PluginTuneJS_PluginTune_setListener(JSContext *cx, uint32_t argc, JS::Value *vp)
 #elif defined(JS_VERSION)
 JSBool js_PluginTuneJS_PluginTune_setListener(JSContext *cx, unsigned argc, JS::Value *vp)
 #endif
@@ -169,18 +184,18 @@ JSBool js_PluginTuneJS_PluginTune_setListener(JSContext *cx, unsigned argc, JS::
 
         JSB_PRECONDITION2(ok, cx, false, "js_PluginTuneJS_PluginTune_setListener : Error processing arguments");
         TuneListenerJS *lis = new TuneListenerJS();
-        lis->setJSDelegate(args.get(0));
+        lis->setJSDelegate(cx, args.get(0));
         sdkbox::PluginTune::setListener(lis);
 
         args.rval().setUndefined();
         return true;
     }
-    JS_ReportError(cx, "js_PluginTuneJS_PluginTune_setListener : wrong number of arguments");
+    JS_ReportErrorUTF8(cx, "js_PluginTuneJS_PluginTune_setListener : wrong number of arguments");
     return false;
 }
 
 #if defined(MOZJS_MAJOR_VERSION)
-bool js_PluginTuneJS_PluginTune_setLatitude(JSContext *cx, uint32_t argc, jsval *vp)
+bool js_PluginTuneJS_PluginTune_setLatitude(JSContext *cx, uint32_t argc, JS::Value *vp)
 #elif defined(JS_VERSION)
 JSBool js_PluginTuneJS_PluginTune_setLatitude(JSContext *cx, uint32_t argc, jsval *vp)
 #endif
@@ -216,15 +231,18 @@ JSBool js_PluginTuneJS_PluginTune_setLatitude(JSContext *cx, uint32_t argc, jsva
             return true;
         }
     } while (0);
-    JS_ReportError(cx, "js_PluginTuneJS_PluginTune_setLatitude : wrong number of arguments");
+    JS_ReportErrorUTF8(cx, "js_PluginTuneJS_PluginTune_setLatitude : wrong number of arguments");
     return false;
 }
 
 #define TUNE_LOCAL_REGISTER \
 JS_DefineFunction(cx, pluginObj, "setListener", js_PluginTuneJS_PluginTune_setListener, 1, JSPROP_READONLY | JSPROP_PERMANENT); \
-JS_DefineFunction(cx, pluginObj, "setLatitude", js_PluginTuneJS_PluginTune_setLatitude, 2, JSPROP_PERMANENT | JSPROP_ENUMERATE); \
+JS_DefineFunction(cx, pluginObj, "setLatitude", js_PluginTuneJS_PluginTune_setLatitude, 2, JSPROP_PERMANENT | JSPROP_ENUMERATE);
+
+/*
 JS_DefineFunction(cx, pluginObj, "measureEvent", js_PluginTuneJS_PluginTune_measureEventForScript, 1, JSPROP_PERMANENT | JSPROP_ENUMERATE); \
 JS_DefineFunction(cx, pluginObj, "setPreloadData", js_PluginTuneJS_PluginTune_setPreloadDataForScript, 1, JSPROP_PERMANENT | JSPROP_ENUMERATE);
+ */
 
 #if defined(MOZJS_MAJOR_VERSION)
 #if MOZJS_MAJOR_VERSION >= 33

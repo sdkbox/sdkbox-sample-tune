@@ -68,7 +68,7 @@ var HelloWorldLayer = cc.Layer.extend({
             event.attribute1 = "srisp";
             event.attribute2 = "red";
             event.quantity = 3;
-            sdkbox.PluginTune.measureEvent(JSON.stringify(event));
+            sdkbox.PluginTune.measureEventForScript(JSON.stringify(event));
         });
 
         var winsize = cc.winSize;
